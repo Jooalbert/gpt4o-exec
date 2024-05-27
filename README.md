@@ -1,6 +1,8 @@
 # gpt4o_exec
 
-`gpt4o_exec` is an advanced Python client for executing GPT-4 output with additional functionalities, including weather updates, cryptocurrency prices, and dynamic Python code execution. The project leverages OpenAI's API to facilitate interactive and automated tool calls.
+`gpt4o_exec` is an advanced Python client for executing GPT-4 output with additional functionalities, including weather updates, cryptocurrency prices, and dynamic Python code execution. The project leverages OpenAI's API to facilitate interactive and automated tool calls. This client is designed to be highly extensible, allowing for robust context window management and a solid framework for handling tool call execution asynchronously.
+
+Please note that the asynchronous tool call handling is experimental and might be reverted to synchronous executions if it is determined to be a better approach for most use cases.
 
 ## Features
 
@@ -12,10 +14,9 @@
 ## Installation
 
 The fast way:
-
-    ```sh
-    pip install git+https://github.com/exec/gpt4o_exec.git
-    ```
+```sh
+pip install git+https://github.com/exec/gpt4o_exec.git
+```
 
 The traditional way:
 
@@ -43,7 +44,6 @@ The traditional way:
     ```
 
 ## Usage
-
 
 1. Run the main script:
 
