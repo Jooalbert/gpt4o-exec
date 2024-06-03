@@ -3,6 +3,7 @@ import json
 import os
 import uuid
 import asyncio
+import aiofiles
 from openai import AsyncOpenAI
 from .tools import exec_python, get_current_weather, get_crypto_price
 from .ui import ToolUI

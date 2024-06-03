@@ -1,4 +1,5 @@
 # gpt4o_exec/ui.py
+# kinda gritty but we'll get there
 from rich.console import Console
 from rich.table import Table
 from rich.live import Live

@@ -66,6 +66,88 @@ The traditional way:
     - Provide a directory path for storage if file storage is used.
     - Interact with the assistant by typing your queries and commands.
 
+# Implementation Examples
+
+The main client file serves as an example implementation of the GPT4oExecClient class. It demonstrates properly managing threads and context window, utilizing functions within the client reasonably well.
+
+A web API implementation will be developed to facilitate a future GPT-4o tool-use web interface project I would like to build on top of this in the near future.
+
+### Example 1: Discussing a Dataset
+
+```python
+from gpt4o_exec.client import GPT4oExecClient
+import asyncio
+
+# Initialize the client
+client = GPT4oExecClient()
+
+# Create a new thread
+thread_id = client.create_thread()
+
+# Define the messages
+system_message = {"role": "system", "content": "You are a data analyst."}
+user_message = {"role": "user", "content": "I have a dataset located at '/path/to/dataset.csv'. Can you please have a look at it and make sense of it? Perhaps limit output to the first 1000 characters."}
+
+# Add the system message to the thread
+client._add_message(thread_id, system_message)
+
+# Send the user message to the client
+response = asyncio.run(client.chat(thread_id, user_message))
+
+print(response['content'])
+```
+
+### Example 2: Plotting Data with Matplotlib
+
+```python
+from gpt4o_exec.client import GPT4oExecClient
+import asyncio
+
+# Initialize the client
+client = GPT4oExecClient(api_key='your_openai_api_key')
+
+# Create a new thread
+thread_id = client.create_thread()
+
+# Define the messages
+system_message = {"role": "system", "content": "You are a data analyst."}
+user_message = {"role": "user", "content": "I have sales data for the past year in '/path/to/sales_data.csv'. Can you plot it using Matplotlib?"}
+
+# Add the system message to the thread
+client._add_message(thread_id, system_message)
+
+# Send the user message to the client
+response = asyncio.run(client.chat(thread_id, user_message))
+
+print(response['content'])
+```
+
+### Example 3: Executing Python Code
+
+```python
+from gpt4o_exec.client import GPT4oExecClient
+import asyncio
+
+# Initialize the client
+client = GPT4oExecClient(api_key='your_openai_api_key')
+
+# Create a new thread
+thread_id = client.create_thread()
+
+# Define the messages
+system_message = {"role": "system", "content": "You are a Python code execution assistant."}
+user_message = {"role": "user", "content": "Can you write a function to calculate the factorial of a number in Python?"}
+
+# Add the system message to the thread
+client._add_message(thread_id, system_message)
+
+# Send the user message to the client
+response = asyncio.run(client.chat(thread_id, user_message))
+
+print(response['content'])
+```
+
+These examples ensure that the system message is added once, and the user message is sent through the `chat` method, avoiding any duplication.
 ## Contributing
 
 1. Fork the repository.
