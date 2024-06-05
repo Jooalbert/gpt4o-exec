@@ -41,16 +41,38 @@
     "type": "function",
     "function": {
       "name": "get_crypto_price",
-      "description": "Get the current price of a specified cryptocurrency",
+      "description": "Get the current price of a cryptocurrency",
       "parameters": {
         "type": "object",
         "properties": {
           "symbol": {
             "type": "string",
-            "description": "The cryptocurrency symbol, e.g. BTC, ETH"
+            "description": "The cryptocurrency symbol, e.g. 'BTC'"
           }
         },
         "required": ["symbol"]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "generate_image",
+      "description": "Generate an image using DALL-E 3",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "prompt": {
+            "type": "string",
+            "description": "The prompt for the image generation"
+          },
+          "orientation": {
+            "type": "string",
+            "enum": ["portrait", "square", "landscape"],
+            "description": "The orientation of the image"
+          }
+        },
+        "required": ["prompt"]
       }
     }
   }

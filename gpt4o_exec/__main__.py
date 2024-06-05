@@ -1,6 +1,7 @@
 # gpt4o_exec/__main__.py
 import asyncio
 import os
+import base64
 from gpt4o_exec.client import GPT4oExecClient, ToolCallMismatchError
 
 def ask_yes_no(question):
@@ -16,6 +17,10 @@ def ask_for_filepath():
         if os.path.isdir(filepath):
             return filepath
         print("Invalid directory path. Please try again.")
+
+def encode_image_to_base64(image_path):
+    with open(image_path, "rb") as image_file:
+        return base64.b64encode(image_file.read()).decode('utf-8')
 
 async def main():
     api_key = os.getenv('OPENAI_API_KEY')
@@ -38,10 +43,11 @@ async def main():
         if user_input.lower() in ['exit', 'quit']:
             break
 
-        user_message = {"role": "user", "content": user_input}
         try:
-            response_message = await client.chat(thread_id, user_message)
-            print(f"Assistant: {response_message.content}")
+            response_message = await client.chat(thread_id, user_input)
+            print(f"Assistant: {response_message['content']}")
+            if 'image_url' in response_message:
+                print(f"Image URL: {response_message['image_url']}")
         except ToolCallMismatchError as e:
             print(f"Error: {e}")
 

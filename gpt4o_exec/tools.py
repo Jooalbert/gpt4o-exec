@@ -70,3 +70,22 @@ async def get_crypto_price(symbol, crypto_api_key=None):
             return "No data found for the specified symbol."
     else:
         return f"Error fetching crypto price: {response.status} - {response.text}"
+
+async def generate_image(client, prompt, orientation="square"):
+    size_map = {
+        "portrait": "1024x1792",
+        "square": "1024x1024",
+        "landscape": "1792x1024"
+    }
+    size = size_map.get(orientation, "1024x1024")
+
+    response = await client.images.generate(
+        model="dall-e-3",
+        prompt=prompt,
+        size=size,
+        quality="hd",
+        n=1,
+    )
+
+    image_url = response.data[0].url
+    return image_url
