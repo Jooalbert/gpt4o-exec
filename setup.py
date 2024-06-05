@@ -9,7 +9,7 @@ setup(
         'requests',
         'aiohttp',
         'rich',
-        'asynciopg'
+        'asyncpg'
     ],
     package_data={
         'gpt4o_exec': ['tools.json'],
