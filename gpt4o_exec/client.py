@@ -47,10 +47,10 @@ class GPT4oExecClient:
             return json.load(file)
 
     def _load_allowed_tools(self):
-        allowed_tools = os.getenv('GPT4O_EXEC_TOOLS')
-        if allowed_tools:
-            return set(allowed_tools.split(','))
-        return set(self.tools.keys())
+        allowed_tools = os.getenv('GPT4O_EXEC_TOOLS', 'all')
+        if allowed_tools == 'all':
+            return set(self.tools.keys())
+        return set(allowed_tools.split(','))
 
     def create_thread(self, temporary_mode=None):
         temporary_mode = self._parse_boolean(temporary_mode)
@@ -256,4 +256,3 @@ class GPT4oExecClient:
                 if not self.threads[thread_id].get("temporary_mode", False):
                     await self.save_thread(thread_id)
                     del self.threads[thread_id]
-
