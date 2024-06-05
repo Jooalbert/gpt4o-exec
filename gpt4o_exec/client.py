@@ -1,10 +1,12 @@
-# gpt4o_exec/client.py
 import json
 import os
 import uuid
 import asyncio
 import aiofiles
 import base64
+import psutil
+import asyncpg
+from datetime import datetime, timedelta
 from openai import AsyncOpenAI
 from .tools import exec_python, get_current_weather, get_crypto_price, generate_image
 from .ui import ToolUI
@@ -16,7 +18,7 @@ class ToolCallMismatchError(Exception):
         super().__init__(message)
 
 class GPT4oExecClient:
-    def __init__(self, api_key=None, weather_api_key=None, crypto_api_key=None, storage_dir=None, ephemeral=None):
+    def __init__(self, api_key=None, weather_api_key=None, crypto_api_key=None, storage_dir=None, pg_conn_str=None, temporary_mode=None, timeout_minutes=30, memory_threshold=75):
         self.api_key = api_key or os.getenv('OPENAI_API_KEY')
         if not self.api_key:
             raise ValueError("API key must be provided either as an argument or through the OPENAI_API_KEY environment variable.")
@@ -26,11 +28,15 @@ class GPT4oExecClient:
         self.tools = self._load_tools()
         self.allowed_tools = self._load_allowed_tools()
         self.threads = {}
-        self.ephemeral = self._parse_boolean(ephemeral or os.getenv('EPHEMERAL_MODE', 'false'))
+        self.temporary_mode = self._parse_boolean(temporary_mode or os.getenv('GPT4O_EXEC_TEMPORARY_MODE', 'false'))
         self.storage_dir = storage_dir or os.getenv('GPT4O_EXEC_FILE_DIR')
-        if not self.ephemeral and not self.storage_dir:
-            raise ValueError("Storage directory must be provided either as an argument or through the GPT4O_EXEC_FILE_DIR environment variable.")
+        self.pg_conn_str = pg_conn_str or os.getenv('GPT4O_EXEC_PG_CONN_STR')
+        if not self.temporary_mode and not (self.storage_dir or self.pg_conn_str):
+            raise ValueError("Either storage directory or PostgreSQL connection string must be provided.")
         self.ui = ToolUI()
+        self.timeout = timedelta(minutes=timeout_minutes)
+        self.memory_threshold = memory_threshold
+        self.last_check = datetime.now()
 
     def _parse_boolean(self, value):
         return str(value).lower() in ("1", "true", "yes")
@@ -46,45 +52,69 @@ class GPT4oExecClient:
             return set(allowed_tools.split(','))
         return set(self.tools.keys())
 
-    def create_thread(self, ephemeral=None):
-        ephemeral = self._parse_boolean(ephemeral)
+    def create_thread(self, temporary_mode=None):
+        temporary_mode = self._parse_boolean(temporary_mode)
         thread_id = str(uuid.uuid4())
-        self.threads[thread_id] = {"messages": [], "ephemeral": ephemeral}
+        self.threads[thread_id] = {"messages": [], "temporary_mode": temporary_mode, "last_access": datetime.now()}
         return thread_id
 
     async def load_thread(self, thread_id):
-        if self.threads.get(thread_id, {}).get("ephemeral", False):
-            raise ValueError(f"Cannot load an ephemeral thread: {thread_id}")
+        if thread_id not in self.threads:
+            self.threads[thread_id] = {"messages": [], "temporary_mode": False, "last_access": datetime.now()}
 
-        file_path = os.path.join(self.storage_dir, f"{thread_id}.json")
-        if os.path.exists(file_path):
-            async with aiofiles.open(file_path, 'r') as file:
-                self.threads[thread_id]["messages"] = json.loads(await file.read())
+        if self.pg_conn_str:
+            conn = await asyncpg.connect(self.pg_conn_str)
+            thread_data = await conn.fetchval('SELECT data FROM threads WHERE id=$1', thread_id)
+            await conn.close()
+            if thread_data:
+                self.threads[thread_id]["messages"] = json.loads(thread_data)
+            else:
+                raise ValueError(f"No stored context found for thread ID: {thread_id}")
         else:
-            raise ValueError(f"No stored context found for thread ID: {thread_id}")
+            file_path = os.path.join(self.storage_dir, f"{thread_id}.json")
+            if os.path.exists(file_path):
+                async with aiofiles.open(file_path, 'r') as file:
+                    self.threads[thread_id]["messages"] = json.loads(await file.read())
+            else:
+                raise ValueError(f"No stored context found for thread ID: {thread_id}")
+
+        self.threads[thread_id]["last_access"] = datetime.now()
 
     async def save_thread(self, thread_id):
-        if self.threads.get(thread_id, {}).get("ephemeral", False):
-            raise ValueError(f"Cannot save an ephemeral thread: {thread_id}")
+        if self.threads[thread_id].get("temporary_mode", False):
+            return
 
-        file_path = os.path.join(self.storage_dir, f"{thread_id}.json")
-        async with aiofiles.open(file_path, 'w') as file:
-            await file.write(json.dumps(self.threads[thread_id]["messages"], default=str))
+        if self.pg_conn_str:
+            conn = await asyncpg.connect(self.pg_conn_str)
+            thread_data = json.dumps(self.threads[thread_id]["messages"], default=str)
+            await conn.execute('INSERT INTO threads(id, data) VALUES($1, $2) ON CONFLICT (id) DO UPDATE SET data = EXCLUDED.data', thread_id, thread_data)
+            await conn.close()
+        else:
+            file_path = os.path.join(self.storage_dir, f"{thread_id}.json")
+            async with aiofiles.open(file_path, 'w') as file:
+                await file.write(json.dumps(self.threads[thread_id]["messages"], default=str))
+
+        self.threads[thread_id]["last_access"] = datetime.now()
 
     async def delete_thread(self, thread_id):
         if thread_id in self.threads:
-            ephemeral = self.threads[thread_id].get("ephemeral", False)
+            temporary_mode = self.threads[thread_id].get("temporary_mode", False)
             del self.threads[thread_id]
-            if not ephemeral:
-                file_path = os.path.join(self.storage_dir, f"{thread_id}.json")
-                if os.path.exists(file_path):
-                    os.remove(file_path)
+            if not temporary_mode:
+                if self.pg_conn_str:
+                    conn = await asyncpg.connect(self.pg_conn_str)
+                    await conn.execute('DELETE FROM threads WHERE id=$1', thread_id)
+                    await conn.close()
+                else:
+                    file_path = os.path.join(self.storage_dir, f"{thread_id}.json")
+                    if os.path.exists(file_path):
+                        os.remove(file_path)
         else:
             raise ValueError(f"No context found for thread ID: {thread_id}")
 
     async def chat(self, thread_id, user_input):
         if thread_id not in self.threads:
-            raise ValueError(f"No context found for thread ID: {thread_id}")
+            await self.load_thread(thread_id)
 
         new_message, images = self._extract_images(user_input)
         if images:
@@ -166,6 +196,7 @@ class GPT4oExecClient:
     def _add_message(self, thread_id, new_message):
         if new_message not in self.threads[thread_id]["messages"]:
             self.threads[thread_id]["messages"].append({"message": new_message, "tool_calls": []})
+            self.threads[thread_id]["last_access"] = datetime.now()
 
     def _manage_context_window(self, thread_id, max_chars=20000):
         total_chars = sum(len(message['message']['content']) for message in self.threads[thread_id]["messages"] if 'content' in message['message'])
@@ -204,3 +235,25 @@ class GPT4oExecClient:
                 "url": f"data:image/jpeg;base64,{base64_image}"
             }
         }
+
+    async def periodic_check(self):
+        while True:
+            now = datetime.now()
+            await self._offload_threads_if_needed()
+            for thread_id in list(self.threads.keys()):
+                if not self.threads[thread_id].get("temporary_mode", False):
+                    last_access = self.threads[thread_id]["last_access"]
+                    if now - last_access > self.timeout:
+                        await self.save_thread(thread_id)
+                        del self.threads[thread_id]
+            self.last_check = now
+            await asyncio.sleep(60)
+
+    async def _offload_threads_if_needed(self):
+        memory_usage = psutil.virtual_memory().percent
+        if memory_usage > self.memory_threshold:
+            for thread_id in list(self.threads.keys()):
+                if not self.threads[thread_id].get("temporary_mode", False):
+                    await self.save_thread(thread_id)
+                    del self.threads[thread_id]
+
