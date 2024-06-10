@@ -8,7 +8,7 @@ import psutil
 import asyncpg
 from datetime import datetime, timedelta
 from openai import AsyncOpenAI
-from .tools import exec_python, get_current_weather, get_crypto_price, generate_image
+from .tools import exec_python, generate_image, write_file, read_file, list_files, delete_file
 from .ui import ToolUI
 
 class ToolCallMismatchError(Exception):
@@ -18,12 +18,11 @@ class ToolCallMismatchError(Exception):
         super().__init__(message)
 
 class GPT4oExecClient:
-    def __init__(self, api_key=None, weather_api_key=None, crypto_api_key=None, storage_dir=None, pg_conn_str=None, temporary_mode=None, timeout_minutes=30, memory_threshold=75):
+    def __init__(self, api_key=None, storage_dir=None, pg_conn_str=None, temporary_mode=None, timeout_minutes=30, memory_threshold=75):
         self.api_key = api_key or os.getenv('OPENAI_API_KEY')
         if not self.api_key:
             raise ValueError("API key must be provided either as an argument or through the OPENAI_API_KEY environment variable.")
-        self.weather_api_key = weather_api_key or os.getenv('WEATHER_API_KEY')
-        self.crypto_api_key = crypto_api_key or os.getenv('CRYPTO_API_KEY')
+        
         self.client = AsyncOpenAI(api_key=self.api_key)
         self.tools = self._load_tools()
         self.allowed_tools = self._load_allowed_tools()
@@ -167,12 +166,16 @@ class GPT4oExecClient:
 
                 if tool_name == 'exec_python':
                     result = await exec_python(**tool_args)
-                elif tool_name == 'get_current_weather':
-                    result = await get_current_weather(**tool_args)
-                elif tool_name == 'get_crypto_price':
-                    result = await get_crypto_price(**tool_args)
                 elif tool_name == 'generate_image':
                     result = await generate_image(self.client, **tool_args)
+                elif tool_name == 'write_file':
+                    result = await write_file(**tool_args)
+                elif tool_name == 'read_file':
+                    result = await read_file(**tool_args)
+                elif tool_name == 'list_files':
+                    result = await list_files(**tool_args)
+                elif tool_name == 'delete_file':
+                    result = await delete_file(**tool_args)
                 else:
                     result = f"Tool {tool_name} not implemented."
 

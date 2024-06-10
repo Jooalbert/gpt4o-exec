@@ -19,44 +19,6 @@
   {
     "type": "function",
     "function": {
-      "name": "get_current_weather",
-      "description": "Get the current weather in a given location",
-      "parameters": {
-        "type": "object",
-        "properties": {
-          "location": {
-            "type": "string",
-            "description": "The location, e.g. 'San Francisco, CA'"
-          },
-          "unit": {
-            "type": "string",
-            "enum": ["celsius", "fahrenheit"]
-          }
-        },
-        "required": ["location"]
-      }
-    }
-  },
-  {
-    "type": "function",
-    "function": {
-      "name": "get_crypto_price",
-      "description": "Get the current price of a cryptocurrency",
-      "parameters": {
-        "type": "object",
-        "properties": {
-          "symbol": {
-            "type": "string",
-            "description": "The cryptocurrency symbol, e.g. 'BTC'"
-          }
-        },
-        "required": ["symbol"]
-      }
-    }
-  },
-  {
-    "type": "function",
-    "function": {
       "name": "generate_image",
       "description": "Generate an image using DALL-E 3",
       "parameters": {
@@ -73,6 +35,86 @@
           }
         },
         "required": ["prompt"]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "write_file",
+      "description": "Write content to a file",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "The file path to write to, including the file name and extension"
+          },
+          "content": {
+            "type": "string",
+            "description": "The content to write to the file"
+          },
+          "overwrite": {
+            "type": "boolean",
+            "description": "Whether to overwrite the file if it exists"
+          },
+          "append": {
+            "type": "boolean",
+            "description": "Whether to append the content to the file if it exists"
+          }
+        },
+        "required": ["path", "content"]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "read_file",
+      "description": "Read content from a file",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "The file path to read from, including the file name and extension"
+          }
+        },
+        "required": ["path"]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "list_files",
+      "description": "List files in a directory",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "directory": {
+            "type": "string",
+            "description": "The directory path to list files from"
+          }
+        },
+        "required": ["directory"]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "delete_file",
+      "description": "Delete a file",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "The file path to delete, including the file name and extension"
+          }
+        },
+        "required": ["path"]
       }
     }
   }

@@ -1,0 +1,26 @@
+[tool.poetry]
+name = "gpt4o-exec"
+version = "1.0.0"
+description = "Asynchronous tool calling with GPT-4o"
+authors = ["dh <dh@linux.com>"]
+license = "MIT"
+readme = "README.md"
+
+packages = [
+    { include = "gpt4o_exec", from = "." }
+]
+
+include = ["tools.json"]
+
+[tool.poetry.dependencies]
+python = "^3.12"
+openai = "^1.33.0"
+requests = "^2.32.3"
+aiohttp = "^3.9.5"
+rich = "^13.7.1"
+asyncpg = "^0.29.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
