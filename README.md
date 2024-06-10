@@ -2,7 +2,7 @@
 
 `gpt4o_exec` is an advanced Python client for executing GPT-4 output with additional functionalities, including weather updates, cryptocurrency prices, and dynamic Python code execution. The project leverages OpenAI's API to facilitate interactive and automated tool calls. This client is designed to be highly extensible, allowing for robust context window management and a solid framework for handling tool call execution asynchronously.
 
-Please note that the asynchronous tool call handling is experimental and might be reverted to synchronous executions if it is determined to be a better approach for most use cases.
+**Note:** The asynchronous tool call handling is experimental and may be reverted to synchronous execution if it proves to be more effective for typical use cases.
 
 ## Features
 
@@ -13,49 +13,103 @@ Please note that the asynchronous tool call handling is experimental and might b
 
 ## Installation
 
-The fast way:
+### Quick Installation
+
 ```sh
 pip install git+https://github.com/exec/gpt4o_exec.git
 ```
 
-The traditional way:
+### Traditional Installation
 
 1. Clone the repository:
+
     ```sh
     git clone https://github.com/exec/gpt4o_exec.git
     cd gpt4o_exec
     ```
 
 2. Install dependencies:
+
     ```sh
     pip install -r requirements.txt
     ```
 
-3. Set up environment variables:
-    - `OPENAI_API_KEY`: Your OpenAI API key. Required.
-    - `WEATHER_API_KEY`: Your API key for the weather service (OpenWeatherMap). Optional. Will error on `get_current_weather` calls if not provided.
-    - `CRYPTO_API_KEY`: Your API key for the cryptocurrency service. Optional. Will error on `get_crypto_price` calls if not provided.
+3. Configure environment variables for API keys securely.
 
-    You can set these in your shell configuration file (e.g., `.bashrc` or `.zshrc`):
+### Setting Up Environment Variables
+
+It's important to handle API keys securely. Instead of storing them directly in your `.bashrc`, consider these alternatives:
+
+#### Using a `.env` File
+
+1. Create a `.env` file in your project directory:
+
     ```sh
-    export OPENAI_API_KEY='your_openai_api_key'
-    export WEATHER_API_KEY='your_weather_api_key'
-    export CRYPTO_API_KEY='your_crypto_api_key'
+    touch .env
     ```
+
+2. Add your API keys to the `.env` file:
+
+    ```sh
+    OPENAI_API_KEY='your_openai_api_key'
+    WEATHER_API_KEY='your_weather_api_key'
+    CRYPTO_API_KEY='your_crypto_api_key'
+    ```
+
+3. Load these variables in your Python script using `python-dotenv`:
+
+    ```python
+    from dotenv import load_dotenv
+    import os
+
+    load_dotenv()
+
+    openai_api_key = os.getenv('OPENAI_API_KEY')
+    weather_api_key = os.getenv('WEATHER_API_KEY')
+    crypto_api_key = os.getenv('CRYPTO_API_KEY')
+    ```
+
+4. Install the `python-dotenv` package if you haven't already:
+
+    ```sh
+    pip install python-dotenv
+    ```
+
+#### Using Environment Variable Management Tools
+
+Consider using tools like `direnv` or `dotenv` for automatic loading of environment variables when you enter your project directory.
+
+- **direnv**: Automatically loads environment variables from `.envrc` files. [Install direnv](https://direnv.net/).
+
+    ```sh
+    echo 'export OPENAI_API_KEY="your_openai_api_key"' >> .envrc
+    echo 'export WEATHER_API_KEY="your_weather_api_key"' >> .envrc
+    echo 'export CRYPTO_API_KEY="your_crypto_api_key"' >> .envrc
+    direnv allow
+    ```
+
+- **dotenv**: Load environment variables from `.env` files during runtime. Use the same `.env` setup as described above.
+
+#### Direct Environment Variables (for Advanced Users)
+
+For secure storage on servers or CI/CD pipelines, set environment variables directly in your environment configuration or deployment settings.
+
+```sh
+export OPENAI_API_KEY='your_openai_api_key'
+export WEATHER_API_KEY='your_weather_api_key'
+export CRYPTO_API_KEY='your_crypto_api_key'
+```
 
 ## Usage
 
 1. Run the main script:
 
-    The proper way:
     ```sh
-    # be sure $PATH contains pip script dir, usually ~/.local/bin on linux
-    export PATH="$HOME/.local/bin:$PATH"
-    # add that to your .bashrc or similar config at your will
     gpt4o_exec
     ```
 
-    The universal way:
+    Or, if you prefer using Python directly:
+
     ```sh
     python -m gpt4o_exec
     ```
@@ -66,11 +120,7 @@ The traditional way:
     - Provide a directory path for storage if file storage is used.
     - Interact with the assistant by typing your queries and commands.
 
-# Implementation Examples
-
-The main client file serves as an example implementation of the GPT4oExecClient class. It demonstrates properly managing threads and context window, utilizing functions within the client reasonably well.
-
-A web API implementation will be developed to facilitate a future GPT-4o tool-use web interface project I would like to build on top of this in the near future.
+## Implementation Examples
 
 ### Example 1: Discussing a Dataset
 
@@ -147,7 +197,6 @@ response = asyncio.run(client.chat(thread_id, user_message))
 print(response['content'])
 ```
 
-These examples ensure that the system message is added once, and the user message is sent through the `chat` method, avoiding any duplication.
 ## Contributing
 
 1. Fork the repository.
