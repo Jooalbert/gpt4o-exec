@@ -1,4 +1,0 @@
-openai
-aiohttp
-rich
-asyncpg
